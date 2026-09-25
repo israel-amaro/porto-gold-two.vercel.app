@@ -1,0 +1,6 @@
+{
+  "name": "Porto Painel de aula",
+  "description": "Painel de visualização de horários de aulas em tempo real para o SENAI Vitória com carrossel de mídias dinâmico, sistema de agendamento de salas livres e painel administrativo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
