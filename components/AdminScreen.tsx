@@ -1182,7 +1182,6 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
 
         {/* Links Rápidos e Ações */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <AgendaPorto />
           <button onClick={() => onNavigate ? onNavigate('administrativo') : (window.location.pathname = '/administrativo')} className="bg-white border border-slate-300 text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px]">Administrativo</button>
           <button
             onClick={() => onNavigate ? onNavigate('midia') : (window.location.pathname = '/midia')}
@@ -1244,69 +1243,82 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
         </div>
       </header>
 
-      {/* Main Container com as 3 Abas */}
-      <main className="max-w-[2000px] mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-[#E5E7EB] shadow-lg">
-        {/* Navegação de Abas */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#E5E7EB] pb-4">
-          <div className="flex flex-wrap bg-[#F1F5F9] p-1.5 rounded-2xl gap-2">
-            <button
-              onClick={() => setAdminTab('aulas')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                adminTab === 'aulas'
-                  ? 'bg-white text-[#0F2A52] shadow-sm'
-                  : 'text-[#64748B] hover:text-[#0F2A52]'
-              }`}
-            >
-              <Clock className="w-4 h-4 text-[#1D4E8C]" />
-              <span>Cronograma de Aulas ({context.aulas.length})</span>
-            </button>
+      {/* Main Content Area */}
+      <div className="max-w-[2000px] mx-auto flex flex-col lg:flex-row gap-6 items-start">
+        {/* Sidebar */}
+        <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-2 bg-white p-4 rounded-3xl border border-[#E5E7EB] shadow-lg">
+          <div className="text-[10px] font-black uppercase tracking-wider text-[#6B7280] mb-2 px-2">Categorias</div>
+          <button
+            onClick={() => setAdminTab('aulas')}
+            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left ${
+              adminTab === 'aulas'
+                ? 'bg-[#0F2A52] text-white shadow-sm'
+                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
+            }`}
+          >
+            <Clock className={`w-4 h-4 ${adminTab === 'aulas' ? 'text-blue-300' : 'text-[#1D4E8C]'}`} />
+            <span className="flex-1">Cronograma de Aulas</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${adminTab === 'aulas' ? 'bg-white/20' : 'bg-[#E2E8F0] text-[#0F2A52]'}`}>{context.aulas.length}</span>
+          </button>
 
-            <button
-              onClick={() => setAdminTab('ambientes')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                adminTab === 'ambientes'
-                  ? 'bg-white text-[#0F2A52] shadow-sm'
-                  : 'text-[#64748B] hover:text-[#0F2A52]'
-              }`}
-            >
-              <DoorOpen className="w-4 h-4 text-[#F4901E]" />
-              <span>Gestão de Ambientes ({context.salasCadastradas.length})</span>
-            </button>
+          <button
+            onClick={() => setAdminTab('ambientes')}
+            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left ${
+              adminTab === 'ambientes'
+                ? 'bg-[#0F2A52] text-white shadow-sm'
+                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
+            }`}
+          >
+            <DoorOpen className={`w-4 h-4 ${adminTab === 'ambientes' ? 'text-amber-300' : 'text-[#F4901E]'}`} />
+            <span className="flex-1">Gestão de Ambientes</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${adminTab === 'ambientes' ? 'bg-white/20' : 'bg-[#E2E8F0] text-[#0F2A52]'}`}>{context.salasCadastradas.length}</span>
+          </button>
 
-            <button
-              onClick={() => setAdminTab('agendamentos')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative ${
-                adminTab === 'agendamentos'
-                  ? 'bg-white text-[#0F2A52] shadow-sm'
-                  : 'text-[#64748B] hover:text-[#0F2A52]'
-              }`}
-            >
-              <Building className="w-4 h-4 text-[#F4901E]" />
-              <span>Solicitações de Salas</span>
-              {pendentesCount > 0 && (
-                <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                  {pendentesCount}
-                </span>
-              )}
-            </button>
+          <button
+            onClick={() => setAdminTab('agendamentos')}
+            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left relative ${
+              adminTab === 'agendamentos'
+                ? 'bg-[#0F2A52] text-white shadow-sm'
+                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
+            }`}
+          >
+            <Building className={`w-4 h-4 ${adminTab === 'agendamentos' ? 'text-amber-300' : 'text-[#F4901E]'}`} />
+            <span className="flex-1">Solicitações de Salas</span>
+            {pendentesCount > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                {pendentesCount}
+              </span>
+            )}
+          </button>
 
-            <button
-              onClick={() => setAdminTab('limpeza')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative ${
-                adminTab === 'limpeza'
-                  ? 'bg-white text-[#0F2A52] shadow-sm'
-                  : 'text-[#64748B] hover:text-[#0F2A52]'
-              }`}
-            >
-              <Broom className="w-4 h-4 text-[#1D4E8C]" />
-              <span>Limpeza & Observações</span>
-              {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length > 0 && (
-                <span className="bg-[#F4901E] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                  {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setAdminTab('limpeza')}
+            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left relative ${
+              adminTab === 'limpeza'
+                ? 'bg-[#0F2A52] text-white shadow-sm'
+                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
+            }`}
+          >
+            <Broom className={`w-4 h-4 ${adminTab === 'limpeza' ? 'text-blue-300' : 'text-[#1D4E8C]'}`} />
+            <span className="flex-1">Limpeza & Observações</span>
+            {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length > 0 && (
+              <span className="bg-[#F4901E] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length}
+              </span>
+            )}
+          </button>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 bg-white p-6 sm:p-8 rounded-3xl border border-[#E5E7EB] shadow-lg">
+          {/* Header Area based on active tab */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-[#E5E7EB] pb-4">
+            <h2 className="text-xl font-black uppercase tracking-tight text-[#0F2A52]">
+              {adminTab === 'aulas' ? 'Cronograma de Aulas' :
+               adminTab === 'ambientes' ? 'Gestão de Ambientes' :
+               adminTab === 'agendamentos' ? 'Solicitações de Salas' :
+               'Limpeza & Observações'}
+            </h2>
 
           {adminTab === 'aulas' && (
             <div className="flex flex-wrap items-center gap-3">
@@ -1510,6 +1522,15 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
           </div>
         )}
       </main>
+
+      {/* Right Sidebar - Agenda */}
+      <aside className="w-full lg:w-[360px] shrink-0">
+        <div className="sticky top-6">
+          <AgendaPorto inline={true} />
+        </div>
+      </aside>
+
+      </div>
     </div>
   );
 };
