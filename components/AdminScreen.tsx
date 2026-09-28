@@ -1,3 +1,4 @@
+import AgendaPorto from './AgendaPorto';
 import React, { useState, useContext, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DataContext, ExtendedDataContextType, normalizarNomeAmbiente, calcularTurnoPorHorario } from '../context/DataContext';
@@ -1181,6 +1182,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
 
         {/* Links Rápidos e Ações */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <AgendaPorto />
+          <button onClick={() => onNavigate ? onNavigate('administrativo') : (window.location.pathname = '/administrativo')} className="bg-white border border-slate-300 text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px]">Administrativo</button>
           <button
             onClick={() => onNavigate ? onNavigate('midia') : (window.location.pathname = '/midia')}
             className="bg-[#0F2A52] text-white px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#1D4E8C] transition-all shadow-xs"

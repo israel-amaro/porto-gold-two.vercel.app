@@ -1,3 +1,5 @@
+import { useAdministrativo } from '../hooks/useAdministrativo';
+import { dataLocal, PrioridadeLimpeza, prioridadesDoDia, pesoPrioridade } from '../utils/administrativo';
 import React, { useContext, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DataContext, normalizarNomeAmbiente } from '../context/DataContext';
@@ -41,6 +43,7 @@ interface RoomCleanItem {
   nextClassHoje: RoomClassInfo | null;
   turnosHoje: RoomTurnoInfo[];
   cleaningStatus: 'aguardando_limpeza' | 'em_aula' | 'livre';
+  prioridade?: PrioridadeLimpeza;
   observacao?: {
     observacao: string;
     atualizadoEm?: any;
@@ -125,6 +128,7 @@ const parseTimeToMinutes = (timeStr: string | undefined, defaultTurno?: string):
 
 const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDashboard }) => {
   const context = useContext(DataContext);
+  const prioridades = useAdministrativo<PrioridadeLimpeza>('prioridadesLimpeza');
   const { formattedDate, formattedTime } = useCurrentTime();
 
   // Filtros alinhados aos 3 novos estados de cores: Aguardando Limpeza (Laranja), Em Aula (Vermelho), Livre (Azul)
@@ -143,7 +147,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     return `${day}/${month}/${year}`;
-  }, []);
+  }, [formattedDate]);
 
   // Processar salas: apenas salas com aulas AGENDADAS HOJE (ou com aviso específico da gestão)
   // Salas usadas ontem que estão livres hoje não são exibidas (conforme solicitado pelo usuário)
@@ -183,14 +187,25 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
       }
     });
 
+    const activePriorities = prioridadesDoDia(prioridades.items, dataLocal());
+    const priorityMap = new Map<string, PrioridadeLimpeza>();
+    activePriorities.forEach(item => {
+      const norm = normalizarNomeAmbiente(item.sala);
+      if (!priorityMap.has(norm)) priorityMap.set(norm, item);
+      if (!allRoomsMap.has(norm)) allRoomsMap.set(norm, { sala: item.sala, nomeCurto: getNomeCurtoSala(item.sala), classesHoje: [] });
+    });
+    Object.entries(context.observacoesLimpeza || {}).forEach(([norm, item]) => {
+      if (item.observacao && !allRoomsMap.has(norm)) allRoomsMap.set(norm, { sala: item.sala, nomeCurto: getNomeCurtoSala(item.sala), classesHoje: [] });
+    });
     const list: RoomCleanItem[] = [];
 
     allRoomsMap.forEach((roomData, norm) => {
       const sortedHoje = [...roomData.classesHoje].sort((a, b) => a.startMinutes - b.startMinutes);
       const observacao = context.observacoesLimpeza?.[norm];
+      const prioridade = priorityMap.get(norm);
 
       // Apenas exibe salas com agendamento hoje (ou com aviso de gestão ativo)
-      if (sortedHoje.length === 0 && !observacao?.observacao) {
+      if (sortedHoje.length === 0 && !observacao?.observacao && !prioridade) {
         return;
       }
 
@@ -242,7 +257,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
 
       if (currentClassHoje) {
         cleaningStatus = 'em_aula';
-      } else if (nextClassHoje) {
+      } else if (nextClassHoje || prioridade) {
         cleaningStatus = 'aguardando_limpeza';
       } else {
         cleaningStatus = 'livre';
@@ -257,7 +272,8 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
         nextClassHoje,
         turnosHoje,
         cleaningStatus,
-        observacao
+        observacao,
+        prioridade
       });
     });
 
@@ -268,6 +284,8 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
     // 4º Salas livres / concluídas (Azul)
     // 5º Ordem alfabética pelo nome curto
     list.sort((a, b) => {
+      const priorityDifference = (a.prioridade ? pesoPrioridade[a.prioridade.prioridade] : 3) - (b.prioridade ? pesoPrioridade[b.prioridade.prioridade] : 3);
+      if (priorityDifference) return priorityDifference;
       const aHasObs = !!a.observacao?.observacao;
       const bHasObs = !!b.observacao?.observacao;
       if (aHasObs && !bHasObs) return -1;
@@ -288,7 +306,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
     });
 
     return list;
-  }, [context, todayStr, currentMinutes]);
+  }, [context, todayStr, currentMinutes, prioridades.items]);
 
   // Métricas para a barra de filtros
   const metrics = useMemo(() => {
@@ -431,6 +449,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
 
       {/* Lista de Ambientes Agendados - Sem horários, apenas Turnos */}
       <main className="flex-1 px-3 sm:px-6 max-w-[2400px] mx-auto w-full z-10">
+        {prioridades.error && <p role="alert" className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{prioridades.error}</p>}
         {displayRooms.length === 0 ? (
           <div className="bg-white rounded-2xl border border-[#CBD5E1] p-8 text-center flex flex-col items-center justify-center my-4 shadow-xs">
             <DoorOpen className="w-10 h-10 text-[#F4901E] mb-2" />
@@ -569,7 +588,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
                               </span>
                             ) : isAguardando ? (
                               <span className="text-amber-950 font-bold">
-                                Limpar antes do turno <strong>{proximoTurno}</strong>
+                                {proximoTurno ? <>Limpar antes do turno <strong>{proximoTurno}</strong></> : 'Limpeza solicitada pela gestão'}
                               </span>
                             ) : (
                               <span className="text-blue-900 font-medium">
@@ -637,6 +656,7 @@ const PainelLimpezaScreen: React.FC<PainelLimpezaScreenProps> = ({ onReturnToDas
                         </div>
                       </div>
 
+                        {room.prioridade && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 mt-2"><strong className="uppercase">Prioridade {room.prioridade.prioridade}</strong>{room.prioridade.observacao && <p className="mt-1 whitespace-pre-wrap break-words">{room.prioridade.observacao}</p>}</div>}
                       {/* LINHA DE AVISO DA GESTÃO (SE HOUVER OBSERVAÇÃO) */}
                       {hasObs && (
                         <div className="mt-0.5 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-300 flex items-center gap-1.5 text-[10px] text-amber-950 font-bold shadow-2xs">

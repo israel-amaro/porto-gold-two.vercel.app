@@ -8,7 +8,8 @@
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "lint": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:administrativo": "tsx --test tests/administrativo.node-test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.0",
