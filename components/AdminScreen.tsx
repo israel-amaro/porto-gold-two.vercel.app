@@ -30,7 +30,11 @@ import {
   ArrowRight,
   Broom,
   MessageSquare,
-  ExternalLink
+  ExternalLink,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList
 } from 'lucide-react';
 
 interface AdminScreenProps {
@@ -1103,6 +1107,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
   const { usuarioAtual, logout } = useAuth();
 
   const [adminTab, setAdminTab] = useState<'aulas' | 'ambientes' | 'agendamentos' | 'limpeza'>('aulas');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingAula, setEditingAula] = useState<Aula | null>(null);
   const [addingAula, setAddingAula] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1142,7 +1147,62 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
   }, [context.aulas, searchDate, searchTurma, searchInstrutor, filterShift]);
 
   return (
-    <div className="min-h-screen bg-[#EDF1F6] text-[#0F2A52] p-4 sm:p-8 font-sans relative">
+    <div className="min-h-screen bg-[#EDF1F6] text-[#0F2A52] font-sans relative flex">
+      {/* Sidebar de Navegação Principal */}
+      <aside className={`bg-white border-r border-[#E5E7EB] shadow-sm transition-all duration-300 ease-in-out shrink-0 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'} min-h-screen z-20 sticky top-0`}>
+        <div className="flex items-center justify-between p-4 border-b border-[#E5E7EB]">
+          {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-widest text-[#F4901E]">SENAI</span>}
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-[#F1F5F9] rounded-xl text-[#0F2A52] mx-auto">
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 py-4 flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden">
+          <button onClick={() => onNavigate ? onNavigate('administrativo') : (window.location.pathname = '/administrativo')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Administrativo">
+            <ClipboardList className="w-5 h-5 text-slate-500 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Administrativo</span>}
+          </button>
+          
+          <button onClick={() => onNavigate ? onNavigate('midia') : (window.location.pathname = '/midia')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Mídias & TV">
+            <ImageIcon className="w-5 h-5 text-red-400 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Mídias & TV</span>}
+          </button>
+
+          <button onClick={() => onNavigate ? onNavigate('usuarios') : (window.location.pathname = '/usuarios')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Usuários">
+            <Users className="w-5 h-5 text-[#F4901E] shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Usuários</span>}
+          </button>
+
+          <button onClick={() => onNavigate ? onNavigate('logs') : (window.location.pathname = '/logs')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Logs">
+            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Logs</span>}
+          </button>
+
+          <button onClick={() => onNavigate ? onNavigate('agendamento') : (window.location.pathname = '/agendamento')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Agendamento">
+            <Calendar className="w-5 h-5 text-blue-600 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Agendamento</span>}
+          </button>
+
+          <button onClick={() => onNavigate ? onNavigate('painelcliente') : (window.location.pathname = '/painelcliente')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Painel Cliente">
+            <Layers className="w-5 h-5 text-purple-600 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Painel Cliente</span>}
+          </button>
+
+          <button onClick={() => onNavigate ? onNavigate('limpeza') : (window.location.pathname = '/limpeza')} className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold uppercase text-[10px] ${isSidebarOpen ? 'hover:bg-[#F1F5F9] text-[#0F2A52]' : 'justify-center hover:bg-[#F1F5F9] text-[#0F2A52]'}`} title="Painel Limpeza">
+            <Broom className="w-5 h-5 text-[#1D4E8C] shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Painel Limpeza</span>}
+          </button>
+        </div>
+        
+        <div className="p-3 border-t border-[#E5E7EB]">
+          <button onClick={logout} className={`flex items-center gap-3 p-3 w-full rounded-xl transition-all font-bold uppercase text-[10px] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white ${isSidebarOpen ? 'justify-start' : 'justify-center'}`} title="Encerrar Sessão">
+            <LogOut className="w-5 h-5 shrink-0" />
+            {isSidebarOpen && <span className="whitespace-nowrap">Sair</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Workspace Wrapper */}
+      <div className="flex-1 flex flex-col p-4 sm:p-8 min-w-0 h-screen overflow-y-auto">
       <AnimatePresence>
         {editingAula && (
           <EditModal 
@@ -1167,7 +1227,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
       </AnimatePresence>
       
       {/* Top Header */}
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 max-w-[2000px] mx-auto bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 max-w-[2000px] w-full mx-auto bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F4901E]">SENAI • PAINEL ADMINISTRATIVO</span>
@@ -1180,145 +1240,72 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
           </h1>
         </div>
 
-        {/* Links Rápidos e Ações */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button onClick={() => onNavigate ? onNavigate('administrativo') : (window.location.pathname = '/administrativo')} className="bg-white border border-slate-300 text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px]">Administrativo</button>
-          <button
-            onClick={() => onNavigate ? onNavigate('midia') : (window.location.pathname = '/midia')}
-            className="bg-[#0F2A52] text-white px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#1D4E8C] transition-all shadow-xs"
-          >
-            <ImageIcon className="w-4 h-4 text-red-400" />
-            <span>Mídias & TV</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate ? onNavigate('usuarios') : (window.location.pathname = '/usuarios')}
-            className="bg-white border border-[#CBD5E1] text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#F1F5F9] transition-all shadow-xs"
-          >
-            <Users className="w-4 h-4 text-[#F4901E]" />
-            <span>Usuários</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate ? onNavigate('logs') : (window.location.pathname = '/logs')}
-            className="bg-white border border-[#CBD5E1] text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#F1F5F9] transition-all shadow-xs"
-          >
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Logs</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate ? onNavigate('agendamento') : (window.location.pathname = '/agendamento')}
-            className="bg-white border border-[#CBD5E1] text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#F1F5F9] transition-all shadow-xs"
-          >
-            <Calendar className="w-4 h-4 text-blue-600" />
-            <span>Agendamento</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate ? onNavigate('painelcliente') : (window.location.pathname = '/painelcliente')}
-            className="bg-white border border-[#CBD5E1] text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#F1F5F9] transition-all shadow-xs"
-            title="Abrir Painel de Vídeo para Clientes / Recepção"
-          >
-            <Layers className="w-4 h-4 text-purple-600" />
-            <span>Painel Cliente</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate ? onNavigate('limpeza') : (window.location.pathname = '/limpeza')}
-            className="bg-white border border-[#CBD5E1] text-[#0F2A52] px-4 py-2.5 rounded-xl font-bold uppercase text-[10px] flex items-center gap-2 hover:bg-[#F1F5F9] transition-all shadow-xs"
-            title="Abrir Painel Operacional de Limpeza"
-          >
-            <Broom className="w-4 h-4 text-[#1D4E8C]" />
-            <span>Painel Limpeza</span>
-          </button>
-
-          <button 
-            onClick={logout} 
-            title="Encerrar Sessão" 
-            className="p-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-colors border border-red-200 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="max-w-[2000px] mx-auto flex flex-col lg:flex-row gap-6 items-start">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-2 bg-white p-4 rounded-3xl border border-[#E5E7EB] shadow-lg">
-          <div className="text-[10px] font-black uppercase tracking-wider text-[#6B7280] mb-2 px-2">Categorias</div>
-          <button
-            onClick={() => setAdminTab('aulas')}
-            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left ${
-              adminTab === 'aulas'
-                ? 'bg-[#0F2A52] text-white shadow-sm'
-                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
-            }`}
-          >
-            <Clock className={`w-4 h-4 ${adminTab === 'aulas' ? 'text-blue-300' : 'text-[#1D4E8C]'}`} />
-            <span className="flex-1">Cronograma de Aulas</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full ${adminTab === 'aulas' ? 'bg-white/20' : 'bg-[#E2E8F0] text-[#0F2A52]'}`}>{context.aulas.length}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('ambientes')}
-            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left ${
-              adminTab === 'ambientes'
-                ? 'bg-[#0F2A52] text-white shadow-sm'
-                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
-            }`}
-          >
-            <DoorOpen className={`w-4 h-4 ${adminTab === 'ambientes' ? 'text-amber-300' : 'text-[#F4901E]'}`} />
-            <span className="flex-1">Gestão de Ambientes</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full ${adminTab === 'ambientes' ? 'bg-white/20' : 'bg-[#E2E8F0] text-[#0F2A52]'}`}>{context.salasCadastradas.length}</span>
-          </button>
-
-          <button
-            onClick={() => setAdminTab('agendamentos')}
-            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left relative ${
-              adminTab === 'agendamentos'
-                ? 'bg-[#0F2A52] text-white shadow-sm'
-                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
-            }`}
-          >
-            <Building className={`w-4 h-4 ${adminTab === 'agendamentos' ? 'text-amber-300' : 'text-[#F4901E]'}`} />
-            <span className="flex-1">Solicitações de Salas</span>
-            {pendentesCount > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                {pendentesCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setAdminTab('limpeza')}
-            className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-3 text-left relative ${
-              adminTab === 'limpeza'
-                ? 'bg-[#0F2A52] text-white shadow-sm'
-                : 'bg-transparent text-[#64748B] hover:bg-[#F1F5F9]'
-            }`}
-          >
-            <Broom className={`w-4 h-4 ${adminTab === 'limpeza' ? 'text-blue-300' : 'text-[#1D4E8C]'}`} />
-            <span className="flex-1">Limpeza & Observações</span>
-            {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length > 0 && (
-              <span className="bg-[#F4901E] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length}
-              </span>
-            )}
-          </button>
-        </aside>
-
-        {/* Main Content Area */}
+      <div className="max-w-[2000px] w-full mx-auto flex flex-col lg:flex-row gap-6 items-start">
         <main className="flex-1 min-w-0 bg-white p-6 sm:p-8 rounded-3xl border border-[#E5E7EB] shadow-lg">
-          {/* Header Area based on active tab */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-[#E5E7EB] pb-4">
-            <h2 className="text-xl font-black uppercase tracking-tight text-[#0F2A52]">
-              {adminTab === 'aulas' ? 'Cronograma de Aulas' :
-               adminTab === 'ambientes' ? 'Gestão de Ambientes' :
-               adminTab === 'agendamentos' ? 'Solicitações de Salas' :
-               'Limpeza & Observações'}
-            </h2>
+          {/* Categorias / Navegação de Abas - Voltaram para o Topo */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8 border-b border-[#E5E7EB] pb-4">
+            <div className="flex flex-wrap bg-[#F1F5F9] p-1.5 rounded-2xl gap-2">
+              <button
+                onClick={() => setAdminTab('aulas')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  adminTab === 'aulas'
+                    ? 'bg-white text-[#0F2A52] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#0F2A52]'
+                }`}
+              >
+                <Clock className="w-4 h-4 text-[#1D4E8C]" />
+                <span>Cronograma de Aulas ({context.aulas.length})</span>
+              </button>
+
+              <button
+                onClick={() => setAdminTab('ambientes')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  adminTab === 'ambientes'
+                    ? 'bg-white text-[#0F2A52] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#0F2A52]'
+                }`}
+              >
+                <DoorOpen className="w-4 h-4 text-[#F4901E]" />
+                <span>Gestão de Ambientes ({context.salasCadastradas.length})</span>
+              </button>
+
+              <button
+                onClick={() => setAdminTab('agendamentos')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative ${
+                  adminTab === 'agendamentos'
+                    ? 'bg-white text-[#0F2A52] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#0F2A52]'
+                }`}
+              >
+                <Building className="w-4 h-4 text-[#F4901E]" />
+                <span>Solicitações de Salas</span>
+                {pendentesCount > 0 && (
+                  <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                    {pendentesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setAdminTab('limpeza')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative ${
+                  adminTab === 'limpeza'
+                    ? 'bg-white text-[#0F2A52] shadow-sm'
+                    : 'text-[#64748B] hover:text-[#0F2A52]'
+                }`}
+              >
+                <Broom className="w-4 h-4 text-[#1D4E8C]" />
+                <span>Limpeza & Observações</span>
+                {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length > 0 && (
+                  <span className="bg-[#F4901E] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                    {Object.keys(context.observacoesLimpeza || {}).filter(k => !!context.observacoesLimpeza?.[k]?.observacao).length}
+                  </span>
+                )}
+              </button>
+            </div>
 
           {adminTab === 'aulas' && (
             <div className="flex flex-wrap items-center gap-3">
@@ -1529,8 +1516,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
           <AgendaPorto inline={true} />
         </div>
       </aside>
-
       </div>
+    </div>
     </div>
   );
 };
