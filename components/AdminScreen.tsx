@@ -1374,7 +1374,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
         ) : adminTab === 'limpeza' ? (
           <LimpezaManagementSection onNavigate={onNavigate} />
         ) : adminTab === 'alertas' ? (
-          <AlertasManagementSection />
+          <AlertasManagementSection hideForm={true} />
         ) : (
           /* Aba de Aulas & Cronograma */
           <div>

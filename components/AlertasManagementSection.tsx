@@ -3,7 +3,7 @@ import { DataContext, ExtendedDataContextType } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { Bell, CheckCircle, Send, Trash2, Clock, User } from 'lucide-react';
 
-export default function AlertasManagementSection() {
+export default function AlertasManagementSection({ hideForm = false }: { hideForm?: boolean }) {
   const context = useContext(DataContext) as ExtendedDataContextType;
   const { temPermissao, usuarioAtual } = useAuth();
   const isAdmin = temPermissao(['admin', 'super_admin']);
@@ -27,7 +27,7 @@ export default function AlertasManagementSection() {
 
   return (
     <div className="space-y-8">
-      {isAdmin && (
+      {isAdmin && !hideForm && (
         <div className="bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-sm">
           <h3 className="text-sm font-black uppercase tracking-wider text-[#0F2A52] mb-4 flex items-center gap-2">
             <Bell className="w-5 h-5 text-[#F4901E]" />
