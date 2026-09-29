@@ -89,6 +89,16 @@ export interface ObservacaoLimpeza {
   atualizadoPor?: string;
 }
 
+export interface Alerta {
+  id: string;
+  mensagem: string;
+  ativo: boolean;
+  criadoPor: string;
+  criadoEm?: any;
+  lidoPor?: string;
+  lidoEm?: any;
+}
+
 export interface DataContextType {
   aulas: Aula[];
   anuncios: Anuncio[];
@@ -98,6 +108,7 @@ export interface DataContextType {
   ambientesPersonalizados?: string[];
   painelClienteConfig?: PainelClienteConfig;
   observacoesLimpeza?: Record<string, ObservacaoLimpeza>;
+  alertas: Alerta[];
   loading: boolean;
   error: string | null;
   isOffline?: boolean;
@@ -122,6 +133,8 @@ export interface DataContextType {
   excluirAmbiente: (nome: string) => Promise<void>;
   salvarObservacaoLimpeza?: (sala: string, observacao: string) => Promise<void>;
   removerObservacaoLimpeza?: (sala: string) => Promise<void>;
+  criarAlerta: (mensagem: string) => Promise<void>;
+  marcarAlertaLido: (id: string) => Promise<void>;
   registrarLog: (acao: AuditAction, entidadeTipo: string, entidadeId: string, detalhes?: string, antes?: any, depois?: any) => Promise<void>;
 }
 
@@ -156,6 +169,8 @@ export type AuditAction =
   | 'APROVAR_AGENDAMENTO' 
   | 'REJEITAR_AGENDAMENTO' 
   | 'CRIAR_AMBIENTE'
+  | 'CRIAR_ALERTA'
+  | 'LIDO_ALERTA'
   | string;
 
 export interface LogEntry {

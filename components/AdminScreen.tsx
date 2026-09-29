@@ -1,4 +1,5 @@
 import AgendaPorto from './AgendaPorto';
+import AlertasManagementSection from './AlertasManagementSection';
 import React, { useState, useContext, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DataContext, ExtendedDataContextType, normalizarNomeAmbiente, calcularTurnoPorHorario } from '../context/DataContext';
@@ -34,7 +35,9 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  ClipboardList
+  ClipboardList,
+  Bell,
+  BellRing
 } from 'lucide-react';
 
 interface AdminScreenProps {
@@ -1104,9 +1107,9 @@ const LimpezaManagementSection: React.FC<{ onNavigate?: (route: string) => void 
 
 const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNavigate }) => {
   const context = useContext(DataContext) as ExtendedDataContextType;
-  const { usuarioAtual, logout } = useAuth();
+  const { usuarioAtual, logout, temPermissao } = useAuth();
 
-  const [adminTab, setAdminTab] = useState<'aulas' | 'ambientes' | 'agendamentos' | 'limpeza'>('aulas');
+  const [adminTab, setAdminTab] = useState<'aulas' | 'ambientes' | 'agendamentos' | 'limpeza' | 'alertas'>('aulas');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingAula, setEditingAula] = useState<Aula | null>(null);
   const [addingAula, setAddingAula] = useState(false);
@@ -1227,8 +1230,17 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
       </AnimatePresence>
       
       {/* Top Header */}
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 max-w-[2000px] w-full mx-auto bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs">
-        <div>
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 max-w-[2000px] w-full mx-auto bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs relative overflow-hidden">
+        
+        {/* Notificação Piscante de Alertas */}
+        {context.alertas?.some(a => a.ativo) && (
+          <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 flex items-center justify-center gap-2 animate-pulse shadow-md z-10 cursor-pointer" onClick={() => setAdminTab('alertas')}>
+            <BellRing className="w-4 h-4 animate-bounce" />
+            Você tem alertas importantes não lidos! Clique aqui.
+          </div>
+        )}
+
+        <div className={context.alertas?.some(a => a.ativo) ? "mt-4" : ""}>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F4901E]">SENAI • PAINEL ADMINISTRATIVO</span>
             <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-[#0F2A52] border border-blue-200">
@@ -1305,6 +1317,23 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={() => setAdminTab('alertas')}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative ${
+                  adminTab === 'alertas'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-[#64748B] hover:text-red-600'
+                }`}
+              >
+                {context.alertas?.some(a => a.ativo) ? <BellRing className="w-4 h-4 animate-bounce text-red-500" /> : <Bell className="w-4 h-4" />}
+                <span>Alertas</span>
+                {context.alertas?.filter(a => a.ativo).length > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                    {context.alertas.filter(a => a.ativo).length}
+                  </span>
+                )}
+              </button>
             </div>
 
           {adminTab === 'aulas' && (
@@ -1344,6 +1373,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
           <AgendamentosAdminSection />
         ) : adminTab === 'limpeza' ? (
           <LimpezaManagementSection onNavigate={onNavigate} />
+        ) : adminTab === 'alertas' ? (
+          <AlertasManagementSection />
         ) : (
           /* Aba de Aulas & Cronograma */
           <div>

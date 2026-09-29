@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { upload as vercelBlobUpload } from '@vercel/blob/client';
-import { Aula, Anuncio, Aluno, AgendamentoSala, DataContextType, AuditAction, PainelClienteConfig, ObservacaoLimpeza } from '../types';
+import { Aula, Anuncio, Aluno, AgendamentoSala, DataContextType, AuditAction, PainelClienteConfig, ObservacaoLimpeza, Alerta } from '../types';
 import { db, storage, auth } from '../firebase';
 import { formatarUnidadeCurricular } from '../utils/curricularUnits';
 import { formatarNomeSala, CANONICAL_SALAS } from '../utils/roomFormatter';
@@ -201,6 +201,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [ambientesPersonalizados, setAmbientesPersonalizados] = useState<{ id: string; nome: string }[]>([]);
   const [painelClienteConfig, setPainelClienteConfig] = useState<PainelClienteConfig>(DEFAULT_PAINEL_CLIENTE_CONFIG);
   const [observacoesLimpeza, setObservacoesLimpeza] = useState<Record<string, ObservacaoLimpeza>>({});
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncSource, setSyncSource] = useState<string | null>(null);
@@ -355,6 +356,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const agendamentosCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'agendamentos');
     const ambientesCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'ambientes');
     const limpezaCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'limpeza');
+    const alertasCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'alertas');
     const metaDocRef = doc(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'meta', 'sync');
 
     const unsubMeta = onSnapshot(metaDocRef, (docSnap) => {
@@ -532,6 +534,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.warn("Aviso listener limpeza:", err);
     });
 
+    const unsubAlertas = onSnapshot(alertasCollectionRef, (snapshot) => {
+      const alertasData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Alerta[];
+      alertasData.sort((a, b) => {
+        const timeA = a.criadoEm?.toMillis?.() || 0;
+        const timeB = b.criadoEm?.toMillis?.() || 0;
+        return timeB - timeA;
+      });
+      setAlertas(alertasData);
+    }, (err) => {
+      console.error("Erro listener alertas:", err);
+    });
+
     return () => {
       unsubMeta();
       unsubAmbientes();
@@ -541,6 +555,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       unsubAgendamentos();
       unsubPainelCliente();
       unsubLimpeza();
+      unsubAlertas();
       clearTimeout(reloadTimeoutRef.current);
     };
   }, []);
@@ -1295,14 +1310,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await salvarObservacaoLimpeza(sala, '');
   };
 
+  const criarAlerta = async (mensagem: string) => {
+    try {
+      const alertasColl = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'alertas');
+      const user = auth.currentUser;
+      const criadoPor = user?.email || 'admin';
+      
+      await addDoc(alertasColl, {
+        mensagem,
+        ativo: true,
+        criadoPor,
+        criadoEm: serverTimestamp()
+      });
+      await registrarLog('CRIAR_ALERTA', 'alerta', 'novo', `Alerta enviado: "${mensagem}"`);
+    } catch (err: any) {
+      console.error("Erro ao criar alerta:", err);
+      throw new Error("Erro ao disparar o alerta.");
+    }
+  };
+
+  const marcarAlertaLido = async (id: string) => {
+    try {
+      const user = auth.currentUser;
+      const lidoPor = user?.email || 'usuario';
+      const alertaDoc = doc(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'alertas', id);
+      await updateDoc(alertaDoc, {
+        ativo: false,
+        lidoPor,
+        lidoEm: serverTimestamp()
+      });
+      await registrarLog('LIDO_ALERTA', 'alerta', id, `Alerta marcado como lido por ${lidoPor}`);
+    } catch (err) {
+      console.error("Erro ao marcar alerta como lido:", err);
+    }
+  };
+
   return (
     <DataContext.Provider value={{ 
-      aulas, anuncios, alunos, agendamentos, salasCadastradas, painelClienteConfig, observacoesLimpeza, loading, error, isOffline,
+      aulas, anuncios, alunos, agendamentos, salasCadastradas, painelClienteConfig, observacoesLimpeza, alertas, loading, error, isOffline,
       addAula, updateAulasFromCSV, updateAula, deleteAula, 
       clearAulas, addAnuncio, deleteAnuncio, replaceAnuncio, reorderAnuncios, clearAllAnuncios,
       uploadMediaFile, uploadCSV, syncSource, updatePainelClienteConfig,
       solicitarAgendamento, aprovarAgendamento, rejeitarAgendamento, excluirAgendamento,
-      adicionarAmbiente, excluirAmbiente, salvarObservacaoLimpeza, removerObservacaoLimpeza, registrarLog
+      adicionarAmbiente, excluirAmbiente, salvarObservacaoLimpeza, removerObservacaoLimpeza, 
+      criarAlerta, marcarAlertaLido, registrarLog
     }}>
       {children}
     </DataContext.Provider>
