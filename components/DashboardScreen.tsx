@@ -251,10 +251,10 @@ const CleanVideoPlayer: React.FC<CleanVideoPlayerProps> = ({ src, name, onEnded 
 
     if (ytId) {
         return (
-            <div className="w-full h-full aspect-[9/16] relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
+            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
                 <iframe 
                     src={getYouTubeEmbedUrl(src)} 
-                    className="w-full h-full aspect-[9/16] border-0 pointer-events-none" 
+                    className="w-full h-full border-0 pointer-events-none" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     title={name || "Vídeo SENAI"}
@@ -265,10 +265,10 @@ const CleanVideoPlayer: React.FC<CleanVideoPlayerProps> = ({ src, name, onEnded 
 
     if (isVcdn) {
         return (
-            <div className="w-full h-full aspect-[9/16] relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
+            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center pointer-events-none">
                 <iframe 
                     src={getVcdnEmbedUrl(src)} 
-                    className="w-full h-full aspect-[9/16] border-0 pointer-events-none" 
+                    className="w-full h-full border-0 pointer-events-none" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={name || "Vídeo VCDN / VdoHide"}
@@ -280,7 +280,7 @@ const CleanVideoPlayer: React.FC<CleanVideoPlayerProps> = ({ src, name, onEnded 
     if (useIframeFallback && driveId) {
         // Fallback para iframe do Drive com recorte superior e lateral para ocultar o botão de link/popout (⧉)
         return (
-            <div className="w-full h-full aspect-[9/16] relative overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
+            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center pointer-events-none select-none">
                 <iframe 
                     src={`https://drive.google.com/file/d/${driveId}/preview?autoplay=1`} 
                     className="w-[115%] h-[115%] -mt-[8%] -mr-[7%] border-0 pointer-events-none scale-[1.05]" 
@@ -298,7 +298,7 @@ const CleanVideoPlayer: React.FC<CleanVideoPlayerProps> = ({ src, name, onEnded 
         <video 
             ref={videoRef}
             key={src}
-            className="w-full h-full aspect-[9/16] object-cover pointer-events-none select-none bg-black"
+            className="w-full h-full object-contain pointer-events-none select-none bg-black"
             autoPlay 
             muted 
             loop 
@@ -354,7 +354,7 @@ const MediaCarouselPanel = React.memo<{ anuncios: Anuncio[] }>(({ anuncios }) =>
     const isVid = currentAd?.type === 'video' || isDirectVideoUrl(currentAd?.src) || isDrive || isYT;
 
     return (
-        <div className="w-full h-full aspect-[9/16] overflow-hidden bg-[#0A192F] relative flex items-center justify-center select-none">
+        <div className="w-full h-full overflow-hidden bg-[#0A192F] relative flex items-center justify-center select-none">
             <AnimatePresence mode="wait">
                 <motion.div 
                     key={currentAd.id || currentAd.src || adIndex}
@@ -362,7 +362,7 @@ const MediaCarouselPanel = React.memo<{ anuncios: Anuncio[] }>(({ anuncios }) =>
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="absolute inset-0 w-full h-full aspect-[9/16] flex items-center justify-center overflow-hidden bg-black"
+                    className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-black"
                 >
                     {isVid ? (
                         <CleanVideoPlayer 
@@ -377,7 +377,7 @@ const MediaCarouselPanel = React.memo<{ anuncios: Anuncio[] }>(({ anuncios }) =>
                     ) : (
                         <img 
                             src={currentAd.src} 
-                            className="w-full h-full aspect-[9/16] object-cover pointer-events-none select-none" 
+                            className="w-full h-full object-contain pointer-events-none select-none" 
                             alt={currentAd.name || "Destaque SENAI"} 
                             referrerPolicy="no-referrer" 
                         />
@@ -416,6 +416,10 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
     const lastDetectedShiftRef = useRef<string>(getAutomaticShift());
     const manualOverrideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isManualOverride, setIsManualOverride] = useState(false);
+    
+    // Paginação para telas de Desktop
+    const [pageIndex, setPageIndex] = useState(0);
+    const rowsPerPage = 8; // Adaptado para notebook
     
     // Configurações de Manutenção
     const now = new Date();
@@ -492,8 +496,22 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
             });
             
             setFilteredAulas(filtered);
+            setPageIndex(0); // reset pagination when filters change
         }
     }, [context?.aulas, context?.loading, currentShift, searchTurma]);
+
+    // Timer de paginação
+    useEffect(() => {
+        if (filteredAulas.length <= rowsPerPage) {
+            setPageIndex(0);
+            return;
+        }
+        const totalPages = Math.ceil(filteredAulas.length / rowsPerPage);
+        const timer = setInterval(() => {
+            setPageIndex(prev => (prev + 1) % totalPages);
+        }, 12000); // Muda a página a cada 12 segundos
+        return () => clearInterval(timer);
+    }, [filteredAulas.length]);
 
     if (!context) return null;
 
@@ -517,7 +535,8 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
         );
     }
 
-    const displayAulas = filteredAulas.slice(0, 35);
+    const displayAulasDesktop = filteredAulas.slice(pageIndex * rowsPerPage, (pageIndex + 1) * rowsPerPage);
+    const displayAulasMobile = filteredAulas;
     const hasAnuncios = (context.anuncios?.length || 0) > 0;
 
     const turnos = [
@@ -614,9 +633,9 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                     
                     {/* Left Card: Schedule Table Container */}
                     <div className="flex-1 min-w-0 h-full rounded-[2rem] lg:rounded-[2.5rem] bg-white border border-[#CBD5E1] shadow-[0_10px_30px_-10px_rgba(15,42,82,0.08)] overflow-hidden flex flex-col">
-                        <div className="rounded-[1.9rem] lg:rounded-[2.4rem] w-full h-full bg-white flex flex-col overflow-hidden custom-scrollbar overflow-y-auto">
-                            {displayAulas.length > 0 ? (
-                                <div className="w-full">
+                        <div className="rounded-[1.9rem] lg:rounded-[2.4rem] w-full h-full bg-white flex flex-col overflow-hidden">
+                            {filteredAulas.length > 0 ? (
+                                <div className="w-full h-full flex flex-col">
                                     <table className="w-full text-left border-collapse table-auto md:table-fixed">
                                         <thead className="sticky top-0 z-10 shadow-sm">
                                             <tr className="bg-[#0F2A52] text-white text-xs md:text-sm font-black uppercase tracking-[0.2em] border-b-2 border-[#0F2A52]">
@@ -628,7 +647,7 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#E2E8F0]">
-                                            {displayAulas.map((aula, idx) => (
+                                            {displayAulasDesktop.map((aula, idx) => (
                                                 <motion.tr 
                                                     key={aula.id}
                                                     initial={{ opacity: 0, y: 8 }}
@@ -672,6 +691,16 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                                             ))}
                                         </tbody>
                                     </table>
+                                    {filteredAulas.length > rowsPerPage && (
+                                        <div className="w-full py-3 flex items-center justify-center gap-2 mt-auto border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                                            {Array.from({ length: Math.ceil(filteredAulas.length / rowsPerPage) }).map((_, i) => (
+                                                <div 
+                                                    key={i} 
+                                                    className={`h-2 rounded-full transition-all duration-500 ${i === pageIndex ? 'w-6 bg-[#F4901E]' : 'w-2 bg-[#CBD5E1]'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex-1 flex items-center justify-center flex-col gap-6 text-center py-20 opacity-30">
@@ -684,10 +713,10 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                         </div>
                     </div>
 
-                    {/* Right Card: Independent Media Container (Fixed 1080x1920 - 9:16 Vertical Ratio scaled to fit full screen height) */}
+                    {/* Right Card: Independent Media Container */}
                     {hasAnuncios && (
-                        <div className="h-full aspect-[9/16] flex-shrink-0 rounded-[2rem] lg:rounded-[2.5rem] bg-white border border-[#CBD5E1] shadow-[0_10px_30px_-10px_rgba(15,42,82,0.08)] overflow-hidden flex flex-col justify-center items-center">
-                            <div className="rounded-[1.9rem] lg:rounded-[2.4rem] w-full h-full aspect-[9/16] bg-black overflow-hidden flex items-center justify-center p-0">
+                        <div className="h-full w-[35%] lg:w-[30%] xl:w-[25%] flex-shrink-0 rounded-[2rem] lg:rounded-[2.5rem] bg-white border border-[#CBD5E1] shadow-[0_10px_30px_-10px_rgba(15,42,82,0.08)] overflow-hidden flex flex-col justify-center items-center">
+                            <div className="rounded-[1.9rem] lg:rounded-[2.4rem] w-full h-full bg-black overflow-hidden flex items-center justify-center p-0">
                                 <MediaCarouselPanel anuncios={context.anuncios} />
                             </div>
                         </div>
@@ -700,7 +729,7 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                         <div className="flex flex-col gap-3.5 px-0.5">
                             {/* 1. AULAS PRIMEIRO */}
                             <AnimatePresence mode="popLayout">
-                                {displayAulas.map((a, idx) => (
+                                {displayAulasMobile.map((a, idx) => (
                                     <ClassCard key={a.id} aula={a} index={idx} />
                                 ))}
                             </AnimatePresence>
