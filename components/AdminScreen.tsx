@@ -1230,28 +1230,29 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
       </AnimatePresence>
       
       {/* Top Header */}
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 max-w-[2000px] w-full mx-auto bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs relative overflow-hidden">
+      <header className="mb-6 max-w-[2000px] w-full mx-auto relative px-2">
         
         {/* Notificação Piscante de Alertas */}
         {context.alertas?.some(a => a.ativo) && (
-          <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-xs font-bold uppercase tracking-widest py-1.5 px-4 flex items-center justify-center gap-2 animate-pulse shadow-md z-10 cursor-pointer" onClick={() => setAdminTab('alertas')}>
-            <BellRing className="w-4 h-4 animate-bounce" />
+          <div className="mb-4 rounded-xl w-full bg-red-600 text-white text-xs font-bold uppercase tracking-widest py-3 px-4 flex items-center justify-center gap-2 animate-pulse shadow-md z-10 cursor-pointer" onClick={() => setAdminTab('alertas')}>
+            <BellRing className="w-5 h-5 animate-bounce" />
             Você tem alertas importantes não lidos! Clique aqui.
           </div>
         )}
 
-        <div className={context.alertas?.some(a => a.ativo) ? "mt-4" : ""}>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F4901E]">SENAI • PAINEL ADMINISTRATIVO</span>
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-[#0F2A52] border border-blue-200">
-              {usuarioAtual?.email || 'admin@senai.br'}
-            </span>
+        <div className={`flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 ${context.alertas?.some(a => a.ativo) ? "mt-2" : ""}`}>
+          <div>
+            <div className="flex items-center gap-3 mb-1.5">
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-[#F4901E]">SENAI • PAINEL ADMINISTRATIVO</span>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-[#0F2A52]/10 text-[#0F2A52]">
+                {usuarioAtual?.email || 'admin@senai.br'}
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tighter text-[#0F2A52]">
+              Gestão de Horários & Ambientes
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#0F2A52] mt-1">
-            Gestão de Horários & Ambientes
-          </h1>
         </div>
-
       </header>
 
       {/* Main Content Area */}
