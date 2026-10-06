@@ -414,12 +414,7 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [searchTurma, setSearchTurma] = useState('');
     const lastDetectedShiftRef = useRef<string>(getAutomaticShift());
-    const manualOverrideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isManualOverride, setIsManualOverride] = useState(false);
-    
-    // Paginação para telas de Desktop
-    const [pageIndex, setPageIndex] = useState(0);
-    const rowsPerPage = 8; // Adaptado para notebook
     
     // Configurações de Manutenção
     const now = new Date();
@@ -496,22 +491,8 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
             });
             
             setFilteredAulas(filtered);
-            setPageIndex(0); // reset pagination when filters change
         }
     }, [context?.aulas, context?.loading, currentShift, searchTurma]);
-
-    // Timer de paginação
-    useEffect(() => {
-        if (filteredAulas.length <= rowsPerPage) {
-            setPageIndex(0);
-            return;
-        }
-        const totalPages = Math.ceil(filteredAulas.length / rowsPerPage);
-        const timer = setInterval(() => {
-            setPageIndex(prev => (prev + 1) % totalPages);
-        }, 12000); // Muda a página a cada 12 segundos
-        return () => clearInterval(timer);
-    }, [filteredAulas.length]);
 
     if (!context) return null;
 
@@ -535,8 +516,7 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
         );
     }
 
-    const displayAulasDesktop = filteredAulas.slice(pageIndex * rowsPerPage, (pageIndex + 1) * rowsPerPage);
-    const displayAulasMobile = filteredAulas;
+    const displayAulas = filteredAulas;
     const hasAnuncios = (context.anuncios?.length || 0) > 0;
 
     const turnos = [
@@ -639,15 +619,22 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                                     <table className="w-full text-left border-collapse table-auto md:table-fixed">
                                         <thead className="sticky top-0 z-10 shadow-sm">
                                             <tr className="bg-[#0F2A52] text-white text-xs md:text-sm font-black uppercase tracking-[0.2em] border-b-2 border-[#0F2A52]">
-                                                <th className="py-3.5 lg:py-4 px-3.5 lg:px-5 w-[14%]">Turma</th>
-                                                <th className="py-3.5 lg:py-4 px-3.5 lg:px-5 w-[27%]">Ambiente / Sala</th>
-                                                <th className="py-3.5 lg:py-4 px-3.5 lg:px-5 w-[20%]">Instrutor</th>
-                                                <th className="py-3.5 lg:py-4 px-3.5 lg:px-5 w-[26%]">Unidade Curricular</th>
-                                                <th className="py-3.5 lg:py-4 px-3.5 lg:px-5 w-[13%]">Horário</th>
+                                                <th className={`py-2 lg:py-3 px-2 lg:px-4 w-[14%]`}>Turma</th>
+                                                <th className={`py-2 lg:py-3 px-2 lg:px-4 w-[27%]`}>Ambiente / Sala</th>
+                                                <th className={`py-2 lg:py-3 px-2 lg:px-4 w-[20%]`}>Instrutor</th>
+                                                <th className={`py-2 lg:py-3 px-2 lg:px-4 w-[26%]`}>Unidade Curricular</th>
+                                                <th className={`py-2 lg:py-3 px-2 lg:px-4 w-[13%]`}>Horário</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#E2E8F0]">
-                                            {displayAulasDesktop.map((aula, idx) => (
+                                            {displayAulas.map((aula, idx) => {
+                                                const isCrowded = displayAulas.length > 7;
+                                                const rowPadding = isCrowded ? "py-1.5 lg:py-2 px-2 lg:px-3" : "py-3.5 lg:py-4 px-3.5 lg:px-5";
+                                                const textTurma = isCrowded ? "text-sm md:text-base" : "text-base md:text-lg";
+                                                const textSala = isCrowded ? "text-xs md:text-sm" : "text-sm md:text-base";
+                                                const textInstrutor = isCrowded ? "text-[10px] md:text-xs" : "text-xs md:text-sm";
+                                                
+                                                return (
                                                 <motion.tr 
                                                     key={aula.id}
                                                     initial={{ opacity: 0, y: 8 }}
@@ -655,24 +642,24 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                                                     transition={{ delay: idx * 0.02, duration: 0.3 }}
                                                     className="hover:bg-[#F8FAFC] transition-colors duration-200"
                                                 >
-                                                    <td className="py-3.5 lg:py-4 px-3.5 lg:px-5 font-black text-[#0F2A52] text-base md:text-lg tracking-tight uppercase">
+                                                    <td className={`${rowPadding} font-black text-[#0F2A52] ${textTurma} tracking-tight uppercase`}>
                                                         <span>{formatText(aula.turma)}</span>
                                                     </td>
-                                                    <td className="py-3.5 lg:py-4 px-3.5 lg:px-5 text-sm md:text-base font-black uppercase text-[#F4901E] tracking-wider">
+                                                    <td className={`${rowPadding} ${textSala} font-black uppercase text-[#F4901E] tracking-wider`}>
                                                         <div className="flex items-center gap-2">
-                                                            <ClockIcon className="w-4 h-4 text-[#F4901E] flex-shrink-0" />
+                                                            <ClockIcon className={`${isCrowded ? 'w-3 h-3' : 'w-4 h-4'} text-[#F4901E] flex-shrink-0`} />
                                                             <span className="truncate">{abrevSala(aula.sala)}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3.5 lg:py-4 px-3.5 lg:px-5 text-xs md:text-sm font-bold text-[#374151] uppercase">
+                                                    <td className={`${rowPadding} ${textInstrutor} font-bold text-[#374151] uppercase`}>
                                                         <div className="flex items-center gap-2">
-                                                            <UserTieIcon className="w-4 h-4 text-[#1D4E8C] flex-shrink-0" />
+                                                            <UserTieIcon className={`${isCrowded ? 'w-3 h-3' : 'w-4 h-4'} text-[#1D4E8C] flex-shrink-0`} />
                                                             <span className="truncate">{formatText(aula.instrutor)}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3.5 lg:py-4 px-3.5 lg:px-5 text-[#374151] uppercase">
+                                                    <td className={`${rowPadding} text-[#374151] uppercase`}>
                                                         <div className="flex items-center gap-2 max-w-full">
-                                                            <BookOpenIcon className="w-4 h-4 text-[#1D4E8C] flex-shrink-0" />
+                                                            <BookOpenIcon className={`${isCrowded ? 'w-3 h-3' : 'w-4 h-4'} text-[#1D4E8C] flex-shrink-0`} />
                                                             <span 
                                                                 className={`font-bold uppercase break-words ${getDynamicUcTextClass(formatarUnidadeCurricular(aula.unidade_curricular))}`}
                                                                 title={formatarUnidadeCurricular(aula.unidade_curricular)}
@@ -681,26 +668,17 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                                                             </span>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3.5 lg:py-4 px-3.5 lg:px-5 text-xs md:text-sm font-black text-[#0F2A52] tracking-wider whitespace-nowrap">
+                                                    <td className={`${rowPadding} ${textInstrutor} font-black text-[#0F2A52] tracking-wider whitespace-nowrap`}>
                                                         <div className="flex items-center gap-2">
-                                                            <ClockIcon className="w-4 h-4 text-[#F4901E] flex-shrink-0" />
+                                                            <ClockIcon className={`${isCrowded ? 'w-3 h-3' : 'w-4 h-4'} text-[#F4901E] flex-shrink-0`} />
                                                             <span>{formatarHorarioAula(aula)}</span>
                                                         </div>
                                                     </td>
                                                 </motion.tr>
-                                            ))}
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
-                                    {filteredAulas.length > rowsPerPage && (
-                                        <div className="w-full py-3 flex items-center justify-center gap-2 mt-auto border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                                            {Array.from({ length: Math.ceil(filteredAulas.length / rowsPerPage) }).map((_, i) => (
-                                                <div 
-                                                    key={i} 
-                                                    className={`h-2 rounded-full transition-all duration-500 ${i === pageIndex ? 'w-6 bg-[#F4901E]' : 'w-2 bg-[#CBD5E1]'}`}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             ) : (
                                 <div className="flex-1 flex items-center justify-center flex-col gap-6 text-center py-20 opacity-30">
@@ -729,7 +707,7 @@ const DashboardScreen: React.FC<{ onAdminClick: () => void; onAgendamentoClick?:
                         <div className="flex flex-col gap-3.5 px-0.5">
                             {/* 1. AULAS PRIMEIRO */}
                             <AnimatePresence mode="popLayout">
-                                {displayAulasMobile.map((a, idx) => (
+                                {displayAulas.map((a, idx) => (
                                     <ClassCard key={a.id} aula={a} index={idx} />
                                 ))}
                             </AnimatePresence>
