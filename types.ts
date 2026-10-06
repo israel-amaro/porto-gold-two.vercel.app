@@ -17,6 +17,7 @@ export interface Aula {
   ordem?: number;
   ativa?: boolean;
   criadaEm?: any;
+  modificadoManualmente?: boolean;
 }
 
 export interface Anuncio {
@@ -118,6 +119,7 @@ export interface DataContextType {
   updateAula: (id: string, aula: Partial<Aula>) => Promise<void>;
   deleteAula: (id: string) => Promise<void>;
   clearAulas: () => void;
+  clearAulasHistory: () => Promise<void>;
   addAnuncio: (anuncio: Omit<Anuncio, 'id'>) => Promise<void>;
   deleteAnuncio: (id: string, storagePath?: string) => Promise<void>;
   replaceAnuncio: (id: string, newAnuncio: Omit<Anuncio, 'id'>, oldStoragePath?: string) => Promise<void>;

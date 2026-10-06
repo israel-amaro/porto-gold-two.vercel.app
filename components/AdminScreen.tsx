@@ -1109,7 +1109,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
   const context = useContext(DataContext) as ExtendedDataContextType;
   const { usuarioAtual, logout, temPermissao } = useAuth();
 
-  const [adminTab, setAdminTab] = useState<'aulas' | 'ambientes' | 'agendamentos' | 'limpeza' | 'alertas'>('aulas');
+  const [adminTab, setAdminTab] = useState<'aulas' | 'historico' | 'ambientes' | 'agendamentos' | 'limpeza' | 'alertas'>('aulas');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingAula, setEditingAula] = useState<Aula | null>(null);
   const [addingAula, setAddingAula] = useState(false);
@@ -1138,16 +1138,34 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
     return `${day}/${month}/${year}`;
   };
 
-  const filteredAulasAdmin = useMemo(() => {
-    return context.aulas.filter(aula => {
+  const { currentAulas, historicoAulas, filteredAulasAdmin } = useMemo(() => {
+    const toIsoDate = (d: string) => {
+      if (!d || !d.includes('/')) return d;
+      const [day, month, year] = d.split('/');
+      return `${year}-${month}-${day}`;
+    };
+    const todayIso = new Date().toISOString().split('T')[0];
+
+    const current = context.aulas.filter(aula => toIsoDate(aula.data) >= todayIso);
+    const past = context.aulas.filter(aula => toIsoDate(aula.data) < todayIso);
+
+    const filtered = context.aulas.filter(aula => {
       const matchesDate = !searchDate || aula.data.includes(searchDate);
       const matchesTurma = !searchTurma || aula.turma.toLowerCase().includes(searchTurma.toLowerCase());
       const matchesInstrutor = !searchInstrutor || aula.instrutor.toLowerCase().includes(searchInstrutor.toLowerCase());
       const matchesShift = !filterShift || (aula.turno && aula.turno.toLowerCase() === filterShift.toLowerCase());
       
-      return matchesDate && matchesTurma && matchesInstrutor && matchesShift;
+      const isPast = toIsoDate(aula.data) < todayIso;
+      
+      if (adminTab === 'historico') {
+        return matchesDate && matchesTurma && matchesInstrutor && matchesShift && isPast;
+      } else {
+        return matchesDate && matchesTurma && matchesInstrutor && matchesShift && !isPast;
+      }
     });
-  }, [context.aulas, searchDate, searchTurma, searchInstrutor, filterShift]);
+
+    return { currentAulas: current, historicoAulas: past, filteredAulasAdmin: filtered };
+  }, [context.aulas, searchDate, searchTurma, searchInstrutor, filterShift, adminTab]);
 
   return (
     <div className="min-h-screen bg-[#EDF1F6] text-[#0F2A52] font-sans relative flex">
@@ -1270,8 +1288,22 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
                 }`}
               >
                 <Clock className="w-4 h-4 text-[#1D4E8C]" />
-                <span>Cronograma de Aulas ({context.aulas.length})</span>
+                <span>Cronograma ({currentAulas.length})</span>
               </button>
+
+              {temPermissao(['admin']) && (
+                <button
+                  onClick={() => setAdminTab('historico')}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    adminTab === 'historico'
+                      ? 'bg-white text-[#0F2A52] shadow-sm'
+                      : 'text-[#64748B] hover:text-[#0F2A52]'
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4 text-[#1D4E8C]" />
+                  <span>Histórico ({historicoAulas.length})</span>
+                </button>
+              )}
 
               <button
                 onClick={() => setAdminTab('ambientes')}
@@ -1362,6 +1394,17 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
                 className="bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl font-black uppercase text-[10px] flex items-center gap-1.5 hover:bg-red-600 hover:text-white transition-all"
               >
                 <Trash2 className="w-4 h-4" /> Limpar Tudo
+              </button>
+            </div>
+          )}
+
+          {adminTab === 'historico' && (
+            <div className="flex flex-wrap items-center gap-3">
+              <button 
+                onClick={() => context.clearAulasHistory()} 
+                className="bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl font-black uppercase text-[10px] flex items-center gap-1.5 hover:bg-red-600 hover:text-white transition-all"
+              >
+                <Trash2 className="w-4 h-4" /> Limpar Histórico (+3 meses)
               </button>
             </div>
           )}
@@ -1490,7 +1533,14 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onReturnToDashboard, onNaviga
                       <td className="py-3 px-4 font-semibold text-[#0F2A52] max-w-[200px] truncate">
                         {aula.turma}
                       </td>
-                      <td className="py-3 px-4 text-[#475569]">{aula.instrutor}</td>
+                      <td className="py-3 px-4 text-[#475569]">
+                        {aula.instrutor}
+                        {aula.modificadoManualmente && (
+                          <span title="Modificado manualmente pelo painel" className="ml-1.5 inline-flex items-center text-[#F4901E] bg-amber-50 p-1 rounded">
+                            <Edit3 className="w-3 h-3" />
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-[#64748B] max-w-[220px] truncate" title={aula.unidade_curricular ? formatarUnidadeCurricular(aula.unidade_curricular) : '—'}>
                         {aula.unidade_curricular ? formatarUnidadeCurricular(aula.unidade_curricular) : '—'}
                       </td>

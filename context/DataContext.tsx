@@ -914,20 +914,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const aulasCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'aulas');
       const CHUNK_SIZE = 490;
 
+      // Converter data DD/MM/YYYY para YYYY-MM-DD para comparação correta
+      const toIsoDate = (d: string) => {
+        if (!d || !d.includes('/')) return d;
+        const [day, month, year] = d.split('/');
+        return `${year}-${month}-${day}`;
+      };
+      
+      const todayIso = new Date().toISOString().split('T')[0];
+
+      // Apenas mantém as aulas do CSV que são de hoje em diante
+      const futureAulasFromCsv = uniqueAulas.filter(aula => toIsoDate(aula.data) >= todayIso);
+
+      if (futureAulasFromCsv.length === 0) {
+        throw new Error("O CSV não contém aulas futuras para importar.");
+      }
+
       const currentDocs = await getDocs(aulasCollectionRef);
       const deletePromises: Promise<void>[] = [];
       let deleteBatch = writeBatch(db);
       let deleteCount = 0;
       
       currentDocs.forEach((d) => {
-          deleteBatch.delete(d.ref);
-          deleteCount++;
-          if (deleteCount === CHUNK_SIZE) {
-              deletePromises.push(deleteBatch.commit());
-              deleteBatch = writeBatch(db);
-              deleteCount = 0;
+          const aulaData = d.data() as Aula;
+          // APENAS apaga aulas de hoje em diante, preservando o histórico!
+          if (toIsoDate(aulaData.data) >= todayIso) {
+            deleteBatch.delete(d.ref);
+            deleteCount++;
+            if (deleteCount === CHUNK_SIZE) {
+                deletePromises.push(deleteBatch.commit());
+                deleteBatch = writeBatch(db);
+                deleteCount = 0;
+            }
           }
       });
+
       if (deleteCount > 0) {
           deletePromises.push(deleteBatch.commit());
       }
@@ -937,7 +958,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let addBatch = writeBatch(db);
       let addCount = 0;
 
-      uniqueAulas.forEach((aula, index) => {
+      futureAulasFromCsv.forEach((aula, index) => {
         const newDocRef = doc(aulasCollectionRef);
         const aulaComOrdem = { ...aula, ordem: index };
         addBatch.set(newDocRef, aulaComOrdem);
@@ -957,19 +978,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await setDoc(metaDocRef, {
         updatedAt: serverTimestamp(),
         timestamp: Date.now(),
-        totalAulas: uniqueAulas.length,
+        totalAulas: futureAulasFromCsv.length,
         source: file.name
       }, { merge: true });
 
       await registrarLog(
-        'IMPORTAR_CSV',
         'csv',
         file.name,
-        `Planilha ${file.name} importada com ${uniqueAulas.length} aulas sem duplicidades de ambientes`
+        `Planilha importada com ${futureAulasFromCsv.length} aulas futuras. Histórico passado foi preservado.`
       );
 
       setSyncSource(file.name);
-      alert(`${uniqueAulas.length} aulas sincronizadas com sucesso! Conflitos e duplicidades de salas foram eliminados.`);
+      alert(`${futureAulasFromCsv.length} aulas futuras sincronizadas com sucesso! O histórico anterior a hoje foi preservado.`);
     } catch (e: any) {
       setError(e.message);
       alert("Erro ao processar arquivo: " + e.message);
@@ -994,7 +1014,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(msg);
       }
 
-      const sanitizedAula: Partial<Aula> = { ...aula, turno: novoTurno };
+      const sanitizedAula: Partial<Aula> = { ...aula, turno: novoTurno, modificadoManualmente: true };
       if (sanitizedAula.sala) {
         sanitizedAula.sala = formatarNomeSala(sanitizedAula.sala);
       }
@@ -1111,6 +1131,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await setDoc(metaDocRef, { updatedAt: serverTimestamp(), timestamp: Date.now() }, { merge: true });
 
         await registrarLog('LIMPAR_AULAS', 'aulas', 'todas', 'Todas as aulas do cronograma foram removidas');
+    }
+  };
+
+  const clearAulasHistory = async () => {
+    if (confirm("Tem certeza que deseja apagar o histórico de aulas com mais de 3 meses de antiguidade?")) {
+        const aulasCollectionRef = collection(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'aulas');
+        const currentDocs = await getDocs(aulasCollectionRef);
+        const CHUNK_SIZE = 490;
+        const deletePromises: Promise<void>[] = [];
+        let deleteBatch = writeBatch(db);
+        let deleteCount = 0;
+
+        const toIsoDate = (d: string) => {
+          if (!d || !d.includes('/')) return d;
+          const [day, month, year] = d.split('/');
+          return `${year}-${month}-${day}`;
+        };
+        
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        const thresholdIso = threeMonthsAgo.toISOString().split('T')[0];
+        
+        currentDocs.forEach((d) => {
+            const aulaData = d.data() as Aula;
+            if (toIsoDate(aulaData.data) < thresholdIso) {
+                deleteBatch.delete(d.ref);
+                deleteCount++;
+                if (deleteCount === CHUNK_SIZE) {
+                    deletePromises.push(deleteBatch.commit());
+                    deleteBatch = writeBatch(db);
+                    deleteCount = 0;
+                }
+            }
+        });
+        if (deleteCount > 0) {
+            deletePromises.push(deleteBatch.commit());
+        }
+        await Promise.all(deletePromises);
+
+        const metaDocRef = doc(db, FIRESTORE_ROOT_COLLECTION, FIRESTORE_DATA_DOCUMENT, 'meta', 'sync');
+        await setDoc(metaDocRef, { updatedAt: serverTimestamp(), timestamp: Date.now() }, { merge: true });
+
+        await registrarLog('LIMPAR_HISTORICO', 'aulas', 'todas', 'Histórico de aulas com mais de 3 meses foi removido');
+        alert("Histórico antigo limpo com sucesso!");
     }
   };
 
@@ -1349,7 +1413,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <DataContext.Provider value={{ 
       aulas, anuncios, alunos, agendamentos, salasCadastradas, painelClienteConfig, observacoesLimpeza, alertas, loading, error, isOffline,
       addAula, updateAulasFromCSV, updateAula, deleteAula, 
-      clearAulas, addAnuncio, deleteAnuncio, replaceAnuncio, reorderAnuncios, clearAllAnuncios,
+      clearAulas, clearAulasHistory, addAnuncio, deleteAnuncio, replaceAnuncio, reorderAnuncios, clearAllAnuncios,
       uploadMediaFile, uploadCSV, syncSource, updatePainelClienteConfig,
       solicitarAgendamento, aprovarAgendamento, rejeitarAgendamento, excluirAgendamento,
       adicionarAmbiente, excluirAmbiente, salvarObservacaoLimpeza, removerObservacaoLimpeza, 
